@@ -12,7 +12,8 @@ export type EventKey =
 
 export interface HistoryEvent { key: EventKey; at: string; by: string; note: string; po?: string }
 
-export interface PRItem { name: string; qty: number; unit: string; estPrice: number }
+/** PR lines carry no price: prices are set with the vendor when the PO is created. */
+export interface PRItem { name: string; qty: number; unit: string }
 export interface POItem { name: string; qty: number; unit: string; price: number }
 
 export interface Vendor {

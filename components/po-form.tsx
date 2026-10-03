@@ -6,13 +6,13 @@ import { useState } from 'react';
 import { toast } from '@/components/feedback';
 import { blankItem, ItemsEditor, validItems, type EditorItem } from '@/components/items-editor';
 import { Alert, Empty, Field, FormGrid, PageHead } from '@/components/ui';
-import { poTotals, prTotal } from '@/lib/calc';
+import { poTotals } from '@/lib/calc';
 import { addDays, rp, todayISO } from '@/lib/format';
 import * as ops from '@/lib/ops';
 import { useDB } from '@/lib/store';
 import type { PO, PR } from '@/lib/types';
 
-const fromPR = (pr?: PR): EditorItem[] => (pr ? pr.items.map(i => ({ name: i.name, qty: i.qty, unit: i.unit, price: i.estPrice })) : [blankItem()]);
+const fromPR = (pr?: PR): EditorItem[] => (pr ? pr.items.map(i => ({ name: i.name, qty: i.qty, unit: i.unit, price: 0 })) : [blankItem()]);
 
 export function POForm({ po, initialPrId }: { po?: PO; initialPrId?: string }) {
   const router = useRouter();
@@ -67,6 +67,7 @@ export function POForm({ po, initialPrId }: { po?: PO; initialPrId?: string }) {
     setTried(true);
     if (!prId || !f.vendorId || !f.deliveryDate || !f.shipTo.trim()) return toast('Lengkapi field yang wajib diisi', true);
     if (!validItems(items)) return toast('Setiap item wajib memiliki nama dan qty > 0', true);
+    if (items.some(i => !(i.price > 0))) return toast('Harga satuan wajib diisi sesuai penawaran/kesepakatan vendor', true);
     const data: ops.POInput = { prId, ...f, discount: Number(f.discount) || 0, taxRate: Number(f.taxRate) || 0, paymentTerms: Number(f.paymentTerms) || 0,
       items: items.map(i => ({ name: i.name.trim(), qty: i.qty, unit: i.unit.trim() || 'pcs', price: i.price })) };
     const id = run(d => (po ? ops.updatePO(d, po.id, data) : ops.createPO(d, data)));
@@ -109,7 +110,7 @@ export function POForm({ po, initialPrId }: { po?: PO; initialPrId?: string }) {
             <Field label="Catatan / Syarat" full><textarea className="input" value={f.notes} onChange={e => setF({ ...f, notes: e.target.value })} /></Field>
           </FormGrid>
         </div>
-        <div className="card-head border-t"><h3>Item PO</h3>{pr && <span className="text-muted">Estimasi PR: {rp(prTotal(pr))}</span>}</div>
+        <div className="card-head border-t"><h3>Item PO</h3>{pr && <span className="text-sm text-muted">Item dari {pr.no} — isi harga satuan sesuai penawaran vendor</span>}</div>
         <div className="card-body">
           <ItemsEditor items={items} onChange={setItems} priceLabel="Harga Satuan" showErrors={tried} />
           <div className="ml-auto w-full max-w-[340px] text-sm">

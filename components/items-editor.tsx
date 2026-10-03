@@ -5,16 +5,18 @@ import { rp } from '@/lib/format';
 export interface EditorItem { name: string; qty: number; unit: string; price: number }
 export const blankItem = (): EditorItem => ({ name: '', qty: 1, unit: 'pcs', price: 0 });
 
+/** Line-item editor. PRs use it without prices (`priceLabel` omitted); POs require a unit price per line. */
 export function ItemsEditor({ items, onChange, priceLabel, showErrors }: {
-  items: EditorItem[]; onChange: (items: EditorItem[]) => void; priceLabel: string; showErrors?: boolean;
+  items: EditorItem[]; onChange: (items: EditorItem[]) => void; priceLabel?: string; showErrors?: boolean;
 }) {
+  const withPrice = !!priceLabel;
   const set = (i: number, patch: Partial<EditorItem>) => onChange(items.map((it, n) => (n === i ? { ...it, ...patch } : it)));
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="tbl min-w-[640px] [&_td]:px-2 [&_td]:py-1.5 [&_th]:px-2 [&_th]:py-2">
+        <table className={`tbl [&_td]:px-2 [&_td]:py-1.5 [&_th]:px-2 [&_th]:py-2 ${withPrice ? 'min-w-[640px]' : 'min-w-[420px]'}`}>
           <thead>
-            <tr><th>Barang / Jasa</th><th className="num">Qty</th><th>Satuan</th><th className="num">{priceLabel}</th><th className="num">Jumlah</th><th /></tr>
+            <tr><th>Barang / Jasa</th><th className="num">Qty</th><th>Satuan</th>{withPrice && <><th className="num">{priceLabel}</th><th className="num">Jumlah</th></>}<th /></tr>
           </thead>
           <tbody>
             {items.map((it, i) => (
@@ -22,8 +24,10 @@ export function ItemsEditor({ items, onChange, priceLabel, showErrors }: {
                 <td><input className={`input h-8 ${showErrors && !it.name.trim() ? 'invalid' : ''}`} value={it.name} placeholder="Nama barang / jasa" onChange={e => set(i, { name: e.target.value })} /></td>
                 <td className="w-[90px]"><input className={`input h-8 text-right ${showErrors && !(it.qty > 0) ? 'invalid' : ''}`} type="number" min={0} step="any" value={it.qty} onChange={e => set(i, { qty: Number(e.target.value) })} /></td>
                 <td className="w-[100px]"><input className="input h-8" value={it.unit} onChange={e => set(i, { unit: e.target.value })} /></td>
-                <td className="w-[150px]"><input className="input h-8 text-right" type="number" min={0} step="any" value={it.price} onChange={e => set(i, { price: Number(e.target.value) })} /></td>
-                <td className="num w-[140px]">{rp(it.qty * it.price)}</td>
+                {withPrice && <>
+                  <td className="w-[150px]"><input className={`input h-8 text-right ${showErrors && !(it.price > 0) ? 'invalid' : ''}`} type="number" min={0} step="any" value={it.price} onChange={e => set(i, { price: Number(e.target.value) })} /></td>
+                  <td className="num w-[140px]">{rp(it.qty * it.price)}</td>
+                </>}
                 <td className="w-11">
                   <button type="button" className="btn btn-ghost btn-sm btn-icon btn-danger" title="Hapus" disabled={items.length === 1}
                     onClick={() => onChange(items.filter((_, n) => n !== i))}><Trash2 className="size-4" /></button>

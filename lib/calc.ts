@@ -1,7 +1,4 @@
-import type { Journal, PO, PR } from './types';
-
-export const prTotal = (pr: Pick<PR, 'items'>) =>
-  pr.items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.estPrice) || 0), 0);
+import type { Journal, PO } from './types';
 
 export function poTotals(po: Pick<PO, 'items' | 'discount' | 'taxRate'>) {
   const subtotal = po.items.reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.price) || 0), 0);

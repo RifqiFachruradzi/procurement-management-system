@@ -5,9 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useListState } from '@/components/list-state';
 import { ProgressStrip } from '@/components/tracking';
 import { Badge, Empty, PageHead, SearchBox, StatusBadge, Tabs, Toolbar } from '@/components/ui';
-import { prTotal } from '@/lib/calc';
 import { PR_STAGES } from '@/lib/constants';
-import { downloadCSV, fdate, rp } from '@/lib/format';
+import { downloadCSV, fdate, num } from '@/lib/format';
 import { useDB } from '@/lib/store';
 import { trackPR } from '@/lib/track';
 import type { PRStage } from '@/lib/types';
@@ -22,8 +21,8 @@ export default function PRListPage() {
   if (ls.q) list = list.filter(p => [p.no, p.requester, p.department, p.purpose, ...p.items.map(i => i.name)].join(' ').toLowerCase().includes(ls.q));
 
   const exportCSV = () => downloadCSV('purchase-request.csv', [
-    ['No PR', 'Tanggal', 'Pemohon', 'Departemen', 'Keperluan', 'Tgl Dibutuhkan', 'Estimasi', 'Tahap', 'Posisi', 'Status'],
-    ...list.map(p => [p.no, p.date, p.requester, p.department, p.purpose, p.neededDate, prTotal(p), PR_STAGES[p.stage].label, trackPR(db, p).position.label, p.status]),
+    ['No PR', 'Tanggal', 'Pemohon', 'Departemen', 'Keperluan', 'Tgl Dibutuhkan', 'Item', 'Tahap', 'Posisi', 'Status'],
+    ...list.map(p => [p.no, p.date, p.requester, p.department, p.purpose, p.neededDate, p.items.map(i => `${i.name} (${i.qty} ${i.unit})`).join('; '), PR_STAGES[p.stage].label, trackPR(db, p).position.label, p.status]),
   ]);
 
   return (
@@ -40,15 +39,15 @@ export default function PRListPage() {
         </Toolbar>
         <div className="overflow-x-auto">
           <table className="tbl">
-            <thead><tr><th>No PR</th><th>Tanggal</th><th>Pemohon</th><th>Keperluan</th><th className="num">Estimasi</th><th>Tahap PR</th><th>Posisi</th><th>Status</th></tr></thead>
+            <thead><tr><th>No PR</th><th>Tanggal</th><th>Pemohon</th><th>Keperluan</th><th className="num">Item</th><th>Tahap PR</th><th>Posisi</th><th>Status</th></tr></thead>
             <tbody>
               {list.map(pr => (
                 <tr key={pr.id} className="clickable" onClick={() => router.push(`/pr/${pr.id}`)}>
                   <td><b>{pr.no}</b>{pr.priority === 'Tinggi' && <span className="sub !text-bad">Prioritas tinggi</span>}</td>
                   <td>{fdate(pr.date)}<span className="sub">Butuh: {fdate(pr.neededDate)}</span></td>
                   <td>{pr.requester}<span className="sub">{pr.department}</span></td>
-                  <td className="max-w-[260px]">{pr.purpose}<span className="sub">{pr.items.length} item</span></td>
-                  <td className="num">{rp(prTotal(pr))}</td>
+                  <td className="max-w-[260px]">{pr.purpose}<span className="sub">{pr.items.map(i => i.name).join(', ')}</span></td>
+                  <td className="num">{pr.items.length}<span className="sub">{num(pr.items.reduce((s, i) => s + i.qty, 0))} qty</span></td>
                   <td><Badge tone={PR_STAGES[pr.stage].tone}>{PR_STAGES[pr.stage].label}</Badge></td>
                   <td><ProgressStrip pr={pr} withLabel /></td>
                   <td><StatusBadge status={pr.status} /></td>

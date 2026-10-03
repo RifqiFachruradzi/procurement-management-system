@@ -6,9 +6,8 @@ import { noteDialog, toast } from '@/components/feedback';
 import { NotFound } from '@/components/not-found';
 import { HistoryCard, TrackingCard } from '@/components/tracking';
 import { Badge, Card, DL, PageHead, StatusBadge } from '@/components/ui';
-import { prTotal } from '@/lib/calc';
 import { PR_STAGES } from '@/lib/constants';
-import { fdate, num, rp } from '@/lib/format';
+import { fdate, num } from '@/lib/format';
 import * as ops from '@/lib/ops';
 import { useDB } from '@/lib/store';
 
@@ -58,16 +57,15 @@ export default function PRDetailPage() {
           <Card title="Detail Permintaan">
             <DL items={[
               ['Pemohon', pr.requester], ['Departemen', pr.department], ['Tanggal PR', fdate(pr.date)],
-              ['Dibutuhkan', fdate(pr.neededDate)], ['Prioritas', pr.priority], ['Estimasi Total', rp(prTotal(pr))],
+              ['Dibutuhkan', fdate(pr.neededDate)], ['Prioritas', pr.priority], ['Jumlah Item', `${pr.items.length} item`],
               ['Keperluan', <span key="p" className="font-normal">{pr.purpose || '-'}</span>, true],
             ]} />
           </Card>
           <Card title="Item" bodyless>
             <div className="overflow-x-auto">
               <table className="tbl">
-                <thead><tr><th>#</th><th>Barang / Jasa</th><th className="num">Qty</th><th className="num">Est. Harga</th><th className="num">Jumlah</th></tr></thead>
-                <tbody>{pr.items.map((i, n) => <tr key={n}><td>{n + 1}</td><td>{i.name}</td><td className="num">{num(i.qty)} {i.unit}</td><td className="num">{rp(i.estPrice)}</td><td className="num">{rp(i.qty * i.estPrice)}</td></tr>)}</tbody>
-                <tfoot><tr><td colSpan={4} className="text-right">Total Estimasi</td><td className="num">{rp(prTotal(pr))}</td></tr></tfoot>
+                <thead><tr><th>#</th><th>Barang / Jasa</th><th className="num">Qty</th><th>Satuan</th></tr></thead>
+                <tbody>{pr.items.map((i, n) => <tr key={n}><td>{n + 1}</td><td>{i.name}</td><td className="num">{num(i.qty)}</td><td>{i.unit}</td></tr>)}</tbody>
               </table>
             </div>
           </Card>

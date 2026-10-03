@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { toast } from '@/components/feedback';
 import { blankItem, ItemsEditor, validItems, type EditorItem } from '@/components/items-editor';
 import { Alert, Field, FormGrid, PageHead } from '@/components/ui';
-import { addDays, rp, todayISO } from '@/lib/format';
+import { addDays, todayISO } from '@/lib/format';
 import * as ops from '@/lib/ops';
 import { useDB } from '@/lib/store';
 import type { PR, Priority } from '@/lib/types';
@@ -25,7 +25,7 @@ export function PRForm({ pr }: { pr?: PR }) {
     priority: (pr?.priority ?? 'Normal') as Priority,
     purpose: pr?.purpose ?? '',
   });
-  const [items, setItems] = useState<EditorItem[]>(pr ? pr.items.map(i => ({ name: i.name, qty: i.qty, unit: i.unit, price: i.estPrice })) : [blankItem()]);
+  const [items, setItems] = useState<EditorItem[]>(pr ? pr.items.map(i => ({ name: i.name, qty: i.qty, unit: i.unit, price: 0 })) : [blankItem()]);
   const [tried, setTried] = useState(false);
   const back = pr ? `/pr/${pr.id}` : '/pr';
   const bad = (v: string) => tried && !v.trim() ? 'invalid' : '';
@@ -35,7 +35,7 @@ export function PRForm({ pr }: { pr?: PR }) {
     setTried(true);
     if (!f.requester.trim() || !f.department.trim() || !f.neededDate || !f.purpose.trim()) return toast('Lengkapi field yang wajib diisi', true);
     if (!validItems(items)) return toast('Setiap item wajib memiliki nama dan qty > 0', true);
-    const data: ops.PRInput = { ...f, items: items.map(i => ({ name: i.name.trim(), qty: i.qty, unit: i.unit.trim() || 'pcs', estPrice: i.price })) };
+    const data: ops.PRInput = { ...f, items: items.map(i => ({ name: i.name.trim(), qty: i.qty, unit: i.unit.trim() || 'pcs' })) };
     const id = run(d => (pr ? ops.updatePR(d, pr.id, data) : ops.createPR(d, data)));
     toast(pr ? 'PR diperbarui dan diajukan ulang' : `${useDB.getState().prs.find(p => p.id === id)?.no} berhasil diajukan`);
     router.push(`/pr/${id}`);
@@ -67,8 +67,8 @@ export function PRForm({ pr }: { pr?: PR }) {
             <Field label="Keperluan / Justifikasi *" full><textarea className={`input ${bad(f.purpose)}`} value={f.purpose} onChange={e => setF({ ...f, purpose: e.target.value })} /></Field>
           </FormGrid>
         </div>
-        <div className="card-head border-t"><h3>Daftar Barang / Jasa</h3><span className="text-muted">Total estimasi: <b className="text-fg">{rp(items.reduce((s, i) => s + i.qty * i.price, 0))}</b></span></div>
-        <div className="card-body"><ItemsEditor items={items} onChange={setItems} priceLabel="Est. Harga Satuan" showErrors={tried} /></div>
+        <div className="card-head border-t"><h3>Daftar Barang / Jasa</h3><span className="text-sm text-muted">Harga ditentukan saat pembuatan PO</span></div>
+        <div className="card-body"><ItemsEditor items={items} onChange={setItems} showErrors={tried} /></div>
         <div className="flex justify-end gap-2 border-t border-line px-[18px] py-3.5">
           <Link className="btn" href={back}>Batal</Link>
           <button className="btn btn-primary" type="submit"><Send className="size-4" />{pr ? 'Simpan & Ajukan' : 'Ajukan PR'}</button>
