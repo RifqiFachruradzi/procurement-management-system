@@ -26,14 +26,14 @@ const find = <T extends { id: string }>(list: T[], id: string | null | undefined
 
 /* ---------- Purchase Request ---------- */
 export interface PRInput {
-  requester: string; department: string; date?: string; neededDate: string; purpose: string; priority?: Priority; items: PRItem[];
+  requester: string; supervisor: string; department: string; date?: string; neededDate: string; purpose: string; priority?: Priority; items: PRItem[];
 }
 
 export function createPR(d: DB, data: PRInput, c: Ctx = {}) {
   const at = c.at || nowISO();
   const pr: PR = {
     id: uid(), no: nextNo(d, 'PR', at), date: data.date || at.slice(0, 10),
-    requester: data.requester, department: data.department, neededDate: data.neededDate,
+    requester: data.requester, supervisor: data.supervisor, department: data.department, neededDate: data.neededDate,
     purpose: data.purpose, priority: data.priority || 'Normal', items: data.items,
     status: 'Open', stage: 'SUBMITTED', poId: null,
     history: [ev(d, 'PR_CREATED', { ...c, at, by: data.requester })],
@@ -50,15 +50,26 @@ export function updatePR(d: DB, id: string, data: PRInput, c: Ctx = {}) {
   return pr.id;
 }
 
+/**
+ * Two-level PR approval: the requester's supervisor (Atasan Pemohon) approves first,
+ * then Procurement gives the final approval that allows a PO to be created.
+ */
 export function approvePR(d: DB, id: string, c: Ctx = {}) {
   const pr = find(d.prs, id);
-  pr.stage = 'APPROVED';
-  pr.history.push(ev(d, 'PR_APPROVED', { by: d.settings.approverName, ...c }));
+  if (pr.stage === 'SUBMITTED') {
+    pr.stage = 'SUPERVISOR_APPROVED';
+    pr.history.push(ev(d, 'PR_SUPERVISOR_APPROVED', { by: pr.supervisor || 'Atasan Pemohon', ...c }));
+  } else if (pr.stage === 'SUPERVISOR_APPROVED') {
+    pr.stage = 'APPROVED';
+    pr.history.push(ev(d, 'PR_APPROVED', { by: d.settings.approverName, ...c }));
+  } else throw new Error('PR tidak sedang menunggu approval');
 }
 export function rejectPR(d: DB, id: string, c: Ctx = {}) {
   const pr = find(d.prs, id);
+  const bySupervisor = pr.stage === 'SUBMITTED';
   pr.stage = 'REJECTED';
-  pr.history.push(ev(d, 'PR_REJECTED', { by: d.settings.approverName, ...c }));
+  pr.history.push(ev(d, bySupervisor ? 'PR_SUPERVISOR_REJECTED' : 'PR_REJECTED',
+    { by: bySupervisor ? pr.supervisor || 'Atasan Pemohon' : d.settings.approverName, ...c }));
 }
 export function closePR(d: DB, id: string, c: Ctx = {}) {
   const pr = find(d.prs, id);

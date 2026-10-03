@@ -5,7 +5,7 @@ Procurement web app built with **Next.js 16 (App Router) + React 19 + TypeScript
 ## Flow
 
 ```
-PR dibuat ─► PR disetujui atasan ─► PO dibuat ─► PO disetujui atasan ─► PO dikirim ke vendor
+PR dibuat ─► PR disetujui Atasan Pemohon ─► PR disetujui Procurement ─► PO dibuat ─► PO disetujui atasan ─► PO dikirim ke vendor
    ─► Vendor menyetujui (portal vendor) ─► Barang dikirim ─► Barang diterima (GR)
    ─► Tagihan vendor diinput (panggil No PO) ─► Jurnal Entry pembelian ─► PO & PR Closed
    ─► Jurnal Voucher (Dibuat ► Diperiksa ► Disetujui) ─► Dibayar kasir (bank/kas keluar) ─► Jurnal Entry pembayaran
@@ -14,7 +14,7 @@ PR dibuat ─► PR disetujui atasan ─► PO dibuat ─► PO disetujui atasan
 | Halaman | Fungsi |
 | --- | --- |
 | `/` Dashboard | KPI PR/PO open-closed, nilai PO open, hutang, "Perlu Tindakan", posisi PO |
-| `/pr` Purchase Request | Buat/edit/revisi PR, approval (setujui/tolak + catatan), list Open/Closed, export CSV |
+| `/pr` Purchase Request | Buat/edit/revisi PR, approval 2 level: Atasan Pemohon lalu Procurement (setujui/tolak + catatan), list Open/Closed, export CSV |
 | `/po` Purchase Order | PO dari PR disetujui, Form PO siap cetak + blok tanda tangan, approval atasan, kirim ke vendor (link + email), revisi, pengiriman & penerimaan barang |
 | `/vendor-portal/[id]` | Halaman vendor untuk meninjau Form PO dan menekan Setujui / Tolak |
 | `/tracking` | Timeline 10 tahap posisi PR sampai barang datang & tagihan dijurnal |

@@ -22,7 +22,8 @@ export default function Dashboard() {
     { l: 'Hutang Belum Dibayar', v: rp(unpaid.reduce((s, i) => s + i.payable, 0)), s: `${unpaid.length} tagihan`, i: ReceiptText, h: '/invoices?status=Open' },
   ];
   const todos = [
-    { l: 'PR menunggu approval', n: prs.filter(p => p.status === 'Open' && p.stage === 'SUBMITTED').length, i: ClipboardList, h: '/pr?stage=SUBMITTED' },
+    { l: 'PR menunggu approval atasan pemohon', n: prs.filter(p => p.status === 'Open' && p.stage === 'SUBMITTED').length, i: ClipboardList, h: '/pr?stage=SUBMITTED' },
+    { l: 'PR menunggu approval procurement', n: prs.filter(p => p.status === 'Open' && p.stage === 'SUPERVISOR_APPROVED').length, i: ClipboardList, h: '/pr?stage=SUPERVISOR_APPROVED' },
     { l: 'PR disetujui, belum dibuat PO', n: prs.filter(p => p.status === 'Open' && p.stage === 'APPROVED').length, i: Plus, h: '/pr?stage=APPROVED' },
     { l: 'PO menunggu approval atasan', n: pos.filter(p => p.stage === 'PENDING').length, i: FileText, h: '/po?stage=PENDING' },
     { l: 'PO menunggu persetujuan vendor', n: pos.filter(p => p.stage === 'SENT').length, i: Send, h: '/po?stage=SENT' },

@@ -17,8 +17,10 @@ export function PRForm({ pr }: { pr?: PR }) {
   const settings = useDB(s => s.settings);
   const prs = useDB(s => s.prs);
   const departments = [...new Set(prs.map(p => p.department))];
+  const supervisors = [...new Set(prs.map(p => p.supervisor).filter(Boolean))];
   const [f, setF] = useState({
     requester: pr?.requester ?? settings.userName,
+    supervisor: pr?.supervisor ?? '',
     department: pr?.department ?? '',
     date: pr?.date ?? todayISO(),
     neededDate: pr?.neededDate ?? addDays(todayISO(), 7),
@@ -33,7 +35,7 @@ export function PRForm({ pr }: { pr?: PR }) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setTried(true);
-    if (!f.requester.trim() || !f.department.trim() || !f.neededDate || !f.purpose.trim()) return toast('Lengkapi field yang wajib diisi', true);
+    if (!f.requester.trim() || !f.supervisor.trim() || !f.department.trim() || !f.neededDate || !f.purpose.trim()) return toast('Lengkapi field yang wajib diisi', true);
     if (!validItems(items)) return toast('Setiap item wajib memiliki nama dan qty > 0', true);
     const data: ops.PRInput = { ...f, items: items.map(i => ({ name: i.name.trim(), qty: i.qty, unit: i.unit.trim() || 'pcs' })) };
     const id = run(d => (pr ? ops.updatePR(d, pr.id, data) : ops.createPR(d, data)));
@@ -41,7 +43,7 @@ export function PRForm({ pr }: { pr?: PR }) {
     router.push(`/pr/${id}`);
   };
 
-  const rejected = pr?.history.filter(h => h.key === 'PR_REJECTED').pop();
+  const rejected = pr?.history.filter(h => h.key === 'PR_REJECTED' || h.key === 'PR_SUPERVISOR_REJECTED').pop();
   return (
     <>
       <PageHead title={pr ? `${pr.stage === 'REJECTED' ? 'Revisi' : 'Edit'} ${pr.no}` : 'Buat Purchase Request'} sub="Ajukan kebutuhan barang/jasa untuk disetujui atasan.">
@@ -53,6 +55,10 @@ export function PRForm({ pr }: { pr?: PR }) {
         <div className="card-body">
           <FormGrid>
             <Field label="Pemohon *"><input className={`input ${bad(f.requester)}`} value={f.requester} onChange={e => setF({ ...f, requester: e.target.value })} /></Field>
+            <Field label="Atasan Pemohon *" hint="Penyetuju pertama PR, sebelum Procurement">
+              <input className={`input ${bad(f.supervisor)}`} list="sup-list" placeholder="Nama & jabatan atasan" value={f.supervisor} onChange={e => setF({ ...f, supervisor: e.target.value })} />
+              <datalist id="sup-list">{supervisors.map(s => <option key={s} value={s} />)}</datalist>
+            </Field>
             <Field label="Departemen *">
               <input className={`input ${bad(f.department)}`} list="dept-list" value={f.department} onChange={e => setF({ ...f, department: e.target.value })} />
               <datalist id="dept-list">{departments.map(d => <option key={d} value={d} />)}</datalist>

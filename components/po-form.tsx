@@ -44,7 +44,7 @@ export function POForm({ po, initialPrId }: { po?: PO; initialPrId?: string }) {
         <PageHead title="Buat Purchase Order"><Link className="btn" href="/po"><ArrowLeft className="size-4" />Kembali</Link></PageHead>
         <div className="card">
           <Empty msg="Belum ada PR berstatus Disetujui. PO dibuat dari PR yang sudah disetujui atasan." icon={ClipboardList}>
-            <Link className="btn btn-primary" href="/pr?stage=SUBMITTED">Lihat PR menunggu approval</Link>
+            <Link className="btn btn-primary" href="/pr?stage=SUPERVISOR_APPROVED">Lihat PR menunggu approval</Link>
           </Empty>
         </div>
       </>

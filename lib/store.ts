@@ -32,6 +32,15 @@ function migrate(persisted: unknown, version: number) {
     }
     s.invoices = (s.invoices ?? []).map(i => ({ ...i, voucherId: i.voucherId ?? null }));
   }
+  if (version < 3) {
+    // v3: two-level PR approval (Atasan Pemohon, then Procurement). Older approvals count as both levels.
+    s.prs = (s.prs ?? []).map(pr => {
+      const history = pr.history.flatMap(e => e.key === 'PR_APPROVED'
+        ? [{ ...e, key: 'PR_SUPERVISOR_APPROVED' as const, by: pr.supervisor || 'Atasan Pemohon', note: 'Data sebelum approval 2 level' }, e]
+        : [e]);
+      return { ...pr, supervisor: pr.supervisor ?? '', history };
+    });
+  }
   return s;
 }
 
@@ -48,13 +57,13 @@ export const useDB = create<StoreState>()(
         return out;
       },
       reset: withDemo => set(() => ({ ...(withDemo ? seedDB() : emptyDB()), initialized: true })),
-      replace: data => set(() => ({ ...emptyDB(), ...pickDB(migrate(data, Array.isArray(data.vouchers) ? 2 : 1)), initialized: true })),
+      replace: data => set(() => ({ ...emptyDB(), ...pickDB(migrate(data, data.prs?.every(p => 'supervisor' in p) ? 3 : Array.isArray(data.vouchers) ? 2 : 1)), initialized: true })),
     })),
     {
       name: STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
-      version: 2,
+      version: 3,
       migrate: (p, v) => migrate(p, v) as never,
       partialize: s => ({ ...pickDB(s), initialized: s.initialized }),
     },

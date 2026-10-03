@@ -47,11 +47,12 @@ export function seedDB(): DB {
   const fromPR = (prId: string, prices: number[]) => db.prs.find(p => p.id === prId)!.items.map((i, n) => ({ ...i, price: prices[n] }));
 
   // 1) Full cycle — closed & paid
-  let pr = ops.createPR(db, { requester: 'Rina Marlina', department: 'General Affairs', neededDate: day(20), purpose: 'Kebutuhan ATK kuartal IV', items: [
+  let pr = ops.createPR(db, { requester: 'Rina Marlina', supervisor: 'Hendra Wijaya (GA Manager)', department: 'General Affairs', neededDate: day(20), purpose: 'Kebutuhan ATK kuartal IV', items: [
     { name: 'Kertas A4 80gsm', qty: 50, unit: 'rim' },
     { name: 'Tinta Printer Epson 003', qty: 20, unit: 'pcs' },
     { name: 'Map Plastik', qty: 100, unit: 'pcs' },
   ] }, { at: t(40) });
+  ops.approvePR(db, pr, { at: t(39, 8) });
   ops.approvePR(db, pr, { at: t(39), note: 'OK, sesuai budget' });
   let po = ops.createPO(db, { prId: pr, vendorId: V[0].id, items: fromPR(pr, [53000, 83000, 2000]), taxRate: 11, discount: 50000, deliveryDate: day(28), paymentTerms: 30, shipTo: ship }, { at: t(38) });
   ops.approvePO(db, po, { at: t(37) });
@@ -67,10 +68,11 @@ export function seedDB(): DB {
   ops.payVoucher(db, jv, { date: day(5), ref: 'TRF-BCA-0012345' }, { at: t(5) });
 
   // 2) Shipped, not yet invoiced
-  pr = ops.createPR(db, { requester: 'Fajar Nugroho', department: 'Maintenance', neededDate: day(-3), purpose: 'Penggantian bearing & v-belt mesin produksi line 2', priority: 'Tinggi', items: [
+  pr = ops.createPR(db, { requester: 'Fajar Nugroho', supervisor: 'Agus Salim (Maintenance Manager)', department: 'Maintenance', neededDate: day(-3), purpose: 'Penggantian bearing & v-belt mesin produksi line 2', priority: 'Tinggi', items: [
     { name: 'Bearing SKF 6205', qty: 12, unit: 'pcs' },
     { name: 'V-Belt B-52', qty: 6, unit: 'pcs' },
   ] }, { at: t(12) });
+  ops.approvePR(db, pr, { at: t(11, 8) });
   ops.approvePR(db, pr, { at: t(11) });
   po = ops.createPO(db, { prId: pr, vendorId: V[1].id, items: fromPR(pr, [120000, 95000]), taxRate: 11, discount: 0, deliveryDate: day(-2), paymentTerms: 14, shipTo: ship }, { at: t(10) });
   ops.approvePO(db, po, { at: t(9) });
@@ -83,33 +85,43 @@ export function seedDB(): DB {
   ops.checkVoucher(db, jv2, { at: t(0, 8) });
 
   // 3) Sent to vendor, waiting for vendor approval
-  pr = ops.createPR(db, { requester: 'Yoga Pratama', department: 'IT', neededDate: day(-14), purpose: 'Laptop untuk karyawan baru divisi Finance', items: [
+  pr = ops.createPR(db, { requester: 'Yoga Pratama', supervisor: 'Bambang Irawan (IT Manager)', department: 'IT', neededDate: day(-14), purpose: 'Laptop untuk karyawan baru divisi Finance', items: [
     { name: 'Laptop Lenovo ThinkPad E14 i5/16GB/512GB', qty: 3, unit: 'unit' },
     { name: 'Mouse Wireless Logitech M331', qty: 3, unit: 'pcs' },
   ] }, { at: t(6) });
+  ops.approvePR(db, pr, { at: t(5, 8) });
   ops.approvePR(db, pr, { at: t(5) });
   po = ops.createPO(db, { prId: pr, vendorId: V[2].id, items: fromPR(pr, [13500000, 250000]), taxRate: 11, discount: 500000, deliveryDate: day(-10), paymentTerms: 30, shipTo: db.settings.address }, { at: t(4) });
   ops.approvePO(db, po, { at: t(3) });
   ops.sendPO(db, po, { at: t(3, 15) });
 
   // 4) PO waiting internal approval
-  pr = ops.createPR(db, { requester: 'Lia Kurniawati', department: 'General Affairs', neededDate: day(-20), purpose: 'Kontrak jasa kebersihan bulan depan', items: [
+  pr = ops.createPR(db, { requester: 'Lia Kurniawati', supervisor: 'Hendra Wijaya (GA Manager)', department: 'General Affairs', neededDate: day(-20), purpose: 'Kontrak jasa kebersihan bulan depan', items: [
     { name: 'Jasa Cleaning Service (bulanan)', qty: 1, unit: 'paket' },
   ] }, { at: t(3) });
+  ops.approvePR(db, pr, { at: t(2, 8) });
   ops.approvePR(db, pr, { at: t(2) });
   ops.createPO(db, { prId: pr, vendorId: V[3].id, items: fromPR(pr, [18000000]), taxRate: 11, discount: 0, deliveryDate: day(-25), paymentTerms: 30, shipTo: db.settings.address, notes: 'Termasuk bahan pembersih.' }, { at: t(1) });
 
   // 5) PR approved, no PO yet
-  pr = ops.createPR(db, { requester: 'Dimas Aryo', department: 'Warehouse', neededDate: day(-12), purpose: 'Pallet tambahan untuk area penyimpanan baru', items: [
+  pr = ops.createPR(db, { requester: 'Dimas Aryo', supervisor: 'Rudi Hartono (Warehouse Manager)', department: 'Warehouse', neededDate: day(-12), purpose: 'Pallet tambahan untuk area penyimpanan baru', items: [
     { name: 'Pallet Plastik 120x100', qty: 40, unit: 'pcs' },
   ] }, { at: t(2) });
+  ops.approvePR(db, pr, { at: t(1, 8) });
   ops.approvePR(db, pr, { at: t(1) });
 
   // 6) PR waiting approval
-  ops.createPR(db, { requester: 'Nadia Putri', department: 'Marketing', neededDate: day(-7), purpose: 'Material promosi pameran', items: [
+  ops.createPR(db, { requester: 'Nadia Putri', supervisor: 'Sinta Maharani (Marketing Manager)', department: 'Marketing', neededDate: day(-7), purpose: 'Material promosi pameran', items: [
     { name: 'X-Banner 60x160', qty: 6, unit: 'pcs' },
     { name: 'Brosur A5 Full Color', qty: 2000, unit: 'lembar' },
   ] }, { at: t(0, 8) });
+
+
+  // 8) PR approved by the requester's supervisor, waiting for Procurement
+  pr = ops.createPR(db, { requester: 'Putri Ayu', supervisor: 'Ratna Dewi (Finance Manager)', department: 'Finance', neededDate: day(-10), purpose: 'Lemari arsip tahan api untuk dokumen keuangan', items: [
+    { name: 'Lemari Arsip Tahan Api 4 Laci', qty: 2, unit: 'unit' },
+  ] }, { at: t(0, 9) });
+  ops.approvePR(db, pr, { at: t(0, 11), note: 'Disetujui, mohon diproses' });
 
   return db;
 }

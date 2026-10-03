@@ -51,7 +51,7 @@ function useTheme() {
 function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   const path = usePathname();
   const settings = useDB(s => s.settings);
-  const pendingPR = useDB(s => s.prs.filter(p => p.status === 'Open' && p.stage === 'SUBMITTED').length);
+  const pendingPR = useDB(s => s.prs.filter(p => p.status === 'Open' && (p.stage === 'SUBMITTED' || p.stage === 'SUPERVISOR_APPROVED')).length);
   const pendingPO = useDB(s => s.pos.filter(p => p.stage === 'PENDING').length);
   const pendingJV = useDB(s => s.vouchers.filter(v => v.status === 'Draft' || v.status === 'Checked' || v.status === 'Approved').length);
   const counts: Record<string, number> = { '/pr': pendingPR, '/po': pendingPO, '/vouchers': pendingJV };

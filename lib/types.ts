@@ -1,11 +1,12 @@
 export type Status = 'Open' | 'Closed';
-export type PRStage = 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'PO_CREATED';
+/** SUBMITTED waits for the requester's supervisor, SUPERVISOR_APPROVED waits for Procurement. */
+export type PRStage = 'SUBMITTED' | 'SUPERVISOR_APPROVED' | 'APPROVED' | 'REJECTED' | 'PO_CREATED';
 export type POStage = 'PENDING' | 'REJECTED' | 'APPROVED' | 'SENT' | 'VENDOR_REJECTED' | 'ACCEPTED' | 'SHIPPED' | 'RECEIVED' | 'CLOSED';
 export type Priority = 'Rendah' | 'Normal' | 'Tinggi';
 export type Tone = 'success' | 'warning' | 'danger' | 'info' | 'neutral' | 'open';
 
 export type EventKey =
-  | 'PR_CREATED' | 'PR_UPDATED' | 'PR_APPROVED' | 'PR_REJECTED'
+  | 'PR_CREATED' | 'PR_UPDATED' | 'PR_SUPERVISOR_APPROVED' | 'PR_SUPERVISOR_REJECTED' | 'PR_APPROVED' | 'PR_REJECTED'
   | 'PO_CREATED' | 'PO_UPDATED' | 'PO_APPROVED' | 'PO_REJECTED' | 'REVISED' | 'PO_SENT'
   | 'VENDOR_ACCEPTED' | 'VENDOR_REJECTED' | 'SHIPPED' | 'RECEIVED' | 'INVOICED' | 'PAID'
   | 'CLOSED' | 'REOPENED';
@@ -23,6 +24,8 @@ export interface Vendor {
 
 export interface PR {
   id: string; no: string; date: string; requester: string; department: string; neededDate: string;
+  /** Atasan Pemohon: the requester's supervisor, first approver of the PR. */
+  supervisor: string;
   purpose: string; priority: Priority; items: PRItem[]; status: Status; stage: PRStage; poId: string | null;
   history: HistoryEvent[];
 }
