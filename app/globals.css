@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+  --line: #e3e6eb;
+  --fg: #111827;
+  --muted: #6b7280;
+  --accent: #0f172a;
+  --accent-fg: #ffffff;
+  --brand: #0284c7;
+  --ok: #15803d;
+  --ok-bg: #e8f6ee;
+  --warn: #b45309;
+  --warn-bg: #fdf3e2;
+  --bad: #b91c1c;
+  --bad-bg: #fdecec;
+  --info: #0369a1;
+  --info-bg: #e6f3fb;
+  --neutral-bg: #eef0f3;
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  --bg: #0b0f15;
+  --surface: #121821;
+  --surface-2: #19212c;
+  --line: #252f3c;
+  --fg: #e5e9ef;
+  --muted: #8b95a3;
+  --accent: #e5e9ef;
+  --accent-fg: #0b0f15;
+  --brand: #38bdf8;
+  --ok: #4ade80;
+  --ok-bg: rgb(74 222 128 / 0.12);
+  --warn: #fbbf24;
+  --warn-bg: rgb(251 191 36 / 0.12);
+  --bad: #f87171;
+  --bad-bg: rgb(248 113 113 / 0.12);
+  --info: #38bdf8;
+  --info-bg: rgb(56 189 248 / 0.12);
+  --neutral-bg: #1e2733;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: "Arial Narrow", "Arial Nova Cond", "Liberation Sans Narrow", Arial, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-brand: var(--brand);
+  --color-ok: var(--ok);
+  --color-ok-bg: var(--ok-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-neutral-bg: var(--neutral-bg);
+}
+
+@layer base {
+  html, body { background: var(--bg); color: var(--fg); }
+  body { font-family: var(--font-sans); font-stretch: condensed; font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+  button { cursor: pointer; }
+  h1, h2, h3, h4 { font-weight: 700; letter-spacing: 0.01em; }
+}
+
+@layer components {
+  .card { @apply rounded-[10px] border border-line bg-surface shadow-[0_1px_2px_rgba(16,24,40,.04),0_1px_3px_rgba(16,24,40,.06)] dark:shadow-none; }
+  .card-head { @apply flex items-center justify-between gap-3 border-b border-line px-[18px] py-4; }
+  .card-head h3 { @apply text-base; }
+  .card-body { @apply p-[18px]; }
+
+  .btn { @apply inline-flex h-9 items-center gap-[7px] rounded-lg border border-line bg-surface px-3.5 text-sm whitespace-nowrap transition-colors hover:bg-surface-2 disabled:pointer-events-none disabled:opacity-45; }
+  .btn-primary { @apply border-accent bg-accent text-accent-fg hover:bg-accent hover:opacity-90; }
+  .btn-success { @apply border-ok bg-ok text-white hover:bg-ok hover:opacity-90 dark:text-[#0b0f15]; }
+  .btn-danger { @apply text-bad; }
+  .btn-danger-solid { @apply border-bad bg-bad text-white hover:bg-bad hover:opacity-90; }
+  .btn-ghost { @apply border-transparent bg-transparent; }
+  .btn-sm { @apply h-[30px] px-2.5 text-[13px]; }
+  .btn-icon { @apply w-9 justify-center px-0; }
+  .btn-sm.btn-icon { @apply w-[30px]; }
+
+  .input { @apply h-9 w-full rounded-lg border border-line bg-surface px-2.5 outline-none transition-[border-color,box-shadow] focus:border-brand focus:ring-3 focus:ring-brand/20 read-only:bg-surface-2; }
+  textarea.input { @apply h-auto min-h-[72px] resize-y py-2; }
+  .input.invalid { @apply border-bad; }
+  .label { @apply text-[13px] font-bold text-muted; }
+  .hint { @apply text-xs text-muted; }
+
+  .tbl { @apply w-full border-collapse; }
+  .tbl th { @apply whitespace-nowrap border-b border-line bg-surface-2 px-3.5 py-[11px] text-left text-xs font-bold tracking-wider text-muted uppercase; }
+  .tbl td { @apply border-b border-line px-3.5 py-[11px] align-middle; }
+  .tbl tbody tr:last-child td { @apply border-b-0; }
+  .tbl tfoot td { @apply bg-surface-2 font-bold; }
+  .tbl .num { @apply text-right whitespace-nowrap; }
+  .tbl tr.clickable { @apply cursor-pointer hover:bg-surface-2; }
+  .sub { @apply block text-xs text-muted; }
+
+  .link { @apply text-brand hover:underline; }
+}
+
+/* Printable PO document stays white on paper and screen */
+.doc { background: #fff; color: #111; }
+.doc .tbl th { background: #f3f4f6; color: #333; border-color: #e5e7eb; }
+.doc .tbl td { border-color: #e5e7eb; }
+
+@media print {
+  body { background: #fff !important; }
+  .no-print { display: none !important; }
+  .print-full { padding: 0 !important; max-width: none !important; }
+  .doc { border: 0 !important; padding: 0 !important; }
+}
+
+@keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.animate-in { animation: fade-in .18s ease-out; }
