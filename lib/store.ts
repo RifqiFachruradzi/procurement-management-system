@@ -15,7 +15,25 @@ interface StoreState extends DB {
 
 const pickDB = (s: DB): DB => ({
   settings: s.settings, counters: s.counters, vendors: s.vendors, prs: s.prs, pos: s.pos, invoices: s.invoices, journals: s.journals,
+  vouchers: s.vouchers ?? [],
 });
+
+/** Upgrades data saved by older versions of the app. */
+function migrate(persisted: unknown, version: number) {
+  const s = persisted as DB & { initialized?: boolean };
+  if (version < 2) {
+    // v2: journal entries are numbered JE/..., JV/... now identifies Journal Vouchers (payment documents)
+    const base = emptyDB();
+    s.settings = { ...base.settings, ...s.settings };
+    s.vouchers = s.vouchers ?? [];
+    s.journals = (s.journals ?? []).map(j => ({ ...j, no: j.no.replace(/^JV\//, 'JE/') }));
+    for (const k of Object.keys(s.counters ?? {})) {
+      if (k.startsWith('JV-')) { s.counters[k.replace('JV-', 'JE-')] = s.counters[k]; delete s.counters[k]; }
+    }
+    s.invoices = (s.invoices ?? []).map(i => ({ ...i, voucherId: i.voucherId ?? null }));
+  }
+  return s;
+}
 
 export const STORAGE_KEY = 'procura.pms.v2';
 
@@ -30,12 +48,14 @@ export const useDB = create<StoreState>()(
         return out;
       },
       reset: withDemo => set(() => ({ ...(withDemo ? seedDB() : emptyDB()), initialized: true })),
-      replace: data => set(() => ({ ...emptyDB(), ...pickDB(data), initialized: true })),
+      replace: data => set(() => ({ ...emptyDB(), ...pickDB(migrate(data, Array.isArray(data.vouchers) ? 2 : 1)), initialized: true })),
     })),
     {
       name: STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
+      version: 2,
+      migrate: (p, v) => migrate(p, v) as never,
       partialize: s => ({ ...pickDB(s), initialized: s.initialized }),
     },
   ),

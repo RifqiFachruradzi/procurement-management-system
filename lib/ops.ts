@@ -1,7 +1,9 @@
 /* Business operations. Each op mutates the given DB (an immer draft inside the store, or a plain object while seeding). */
 import { poTotals } from './calc';
 import { nowISO, round, uid } from './format';
-import type { DB, EventKey, HistoryEvent, Invoice, Journal, PO, POItem, PR, PRItem, Priority, Receipt, Shipment, Vendor } from './types';
+import type {
+  DB, EventKey, HistoryEvent, Invoice, Journal, JournalLine, PayMethod, PO, POItem, PR, PRItem, Priority, Receipt, Shipment, Vendor, Voucher, VoucherEventKey,
+} from './types';
 
 export interface Ctx { at?: string; by?: string; note?: string }
 
@@ -196,7 +198,7 @@ export function postInvoice(d: DB, data: InvoiceInput, c: Ctx = {}) {
     debitAccount: data.debitAccount, notes: data.notes || '', status: 'Posted', journalIds: [], createdAt: at,
   };
   const j: Journal = {
-    id: uid(), no: nextNo(d, 'JV', at), date: data.date, type: 'Pembelian', ref: `${inv.no} / ${po.no}`,
+    id: uid(), no: nextNo(d, 'JE', at), date: data.date, type: 'Pembelian', ref: `${inv.no} / ${po.no}`,
     description: `Tagihan ${vendor?.name ?? ''} No. ${data.vendorInvoiceNo} atas ${po.no}`,
     lines: p.lines, invoiceId: inv.id, createdAt: at,
   };
@@ -209,22 +211,98 @@ export function postInvoice(d: DB, data: InvoiceInput, c: Ctx = {}) {
   return inv.id;
 }
 
-export function payInvoice(d: DB, id: string, data: { date: string; ref?: string }, c: Ctx = {}) {
+/* ---------- Journal Voucher (payment) ---------- */
+export interface VoucherInput {
+  date: string; vendorId: string; invoiceIds: string[]; method: PayMethod; creditAccount: string; description: string;
+}
+
+const vev = (d: DB, key: VoucherEventKey, c: Ctx = {}) => ({ key, at: c.at || nowISO(), by: c.by || d.settings.financeName, note: c.note || '' });
+
+/** Invoices that are posted but not yet paid nor included in an active voucher. */
+export const payableInvoices = (d: Pick<DB, 'invoices'>, vendorId?: string) =>
+  d.invoices.filter(i => i.status === 'Posted' && !i.voucherId && (!vendorId || i.vendorId === vendorId));
+
+/** Journal lines a voucher will post when paid: debit payables per invoice, credit the cash/bank account. */
+export function voucherLines(d: Pick<DB, 'invoices'>, invoiceIds: string[], creditAccount: string): JournalLine[] {
+  const invs = invoiceIds.map(id => d.invoices.find(i => i.id === id)).filter((i): i is Invoice => !!i);
+  const total = invs.reduce((s, i) => s + i.payable, 0);
+  return [...invs.map(i => ({ account: '2-1100', debit: i.payable, credit: 0 })), { account: creditAccount, debit: 0, credit: total }];
+}
+
+export function createVoucher(d: DB, data: VoucherInput, c: Ctx = {}) {
   const at = c.at || nowISO();
-  const inv = find(d.invoices, id);
-  const po = d.pos.find(p => p.id === inv.poId);
-  const vendor = d.vendors.find(v => v.id === inv.vendorId);
+  const vendor = find(d.vendors, data.vendorId);
+  const invs = data.invoiceIds.map(id => find(d.invoices, id));
+  if (!invs.length) throw new Error('Pilih minimal satu tagihan');
+  if (invs.some(i => i.vendorId !== vendor.id || i.status !== 'Posted' || i.voucherId)) throw new Error('Tagihan tidak valid untuk voucher');
+  const v: Voucher = {
+    id: uid(), no: nextNo(d, 'JV', at), date: data.date, vendorId: vendor.id, invoiceIds: data.invoiceIds,
+    amount: invs.reduce((s, i) => s + i.payable, 0), method: data.method, creditAccount: data.creditAccount, description: data.description,
+    payTo: { name: vendor.name, bank: vendor.bank, account: vendor.account },
+    status: 'Draft', preparedBy: c.by || d.settings.financeName, createdAt: at,
+    history: [vev(d, 'CREATED', { ...c, at })],
+  };
+  invs.forEach(i => { i.voucherId = v.id; });
+  d.vouchers.unshift(v);
+  return v.id;
+}
+
+export function checkVoucher(d: DB, id: string, c: Ctx = {}) {
+  const v = find(d.vouchers, id);
+  const e = vev(d, 'CHECKED', { by: d.settings.checkerName, ...c });
+  v.status = 'Checked';
+  v.checked = { by: e.by, at: e.at, note: e.note };
+  v.history.push(e);
+}
+export function approveVoucher(d: DB, id: string, c: Ctx = {}) {
+  const v = find(d.vouchers, id);
+  const e = vev(d, 'APPROVED', { by: d.settings.financeApprover, ...c });
+  v.status = 'Approved';
+  v.approved = { by: e.by, at: e.at, note: e.note };
+  v.history.push(e);
+}
+/** Sends a voucher back to Draft (from checking or approval) with a reason. */
+export function returnVoucher(d: DB, id: string, c: Ctx = {}) {
+  const v = find(d.vouchers, id);
+  v.status = 'Draft';
+  v.checked = undefined;
+  v.approved = undefined;
+  v.history.push(vev(d, 'RETURNED', c));
+}
+export function cancelVoucher(d: DB, id: string, c: Ctx = {}) {
+  const v = find(d.vouchers, id);
+  if (v.status === 'Paid') throw new Error('Voucher yang sudah dibayar tidak dapat dibatalkan');
+  v.status = 'Cancelled';
+  d.invoices.forEach(i => { if (i.voucherId === v.id) i.voucherId = null; });
+  v.history.push(vev(d, 'CANCELLED', c));
+}
+
+/** Cashier pays the voucher (bank/cash out): posts the payment journal entry and settles the invoices. */
+export function payVoucher(d: DB, id: string, data: { date: string; ref: string; by?: string }, c: Ctx = {}) {
+  const at = c.at || nowISO();
+  const v = find(d.vouchers, id);
+  if (v.status !== 'Approved') throw new Error('Voucher belum disetujui');
+  const by = data.by || d.settings.cashierName;
+  const invs = v.invoiceIds.map(i => find(d.invoices, i));
   const j: Journal = {
-    id: uid(), no: nextNo(d, 'JV', at), date: data.date, type: 'Pembayaran', ref: `${inv.no} / ${po?.no ?? ''}`,
-    description: `Pembayaran ${vendor?.name ?? ''} No. ${inv.vendorInvoiceNo}${data.ref ? ' — ' + data.ref : ''}`,
-    lines: [{ account: '2-1100', debit: inv.payable, credit: 0 }, { account: '1-1100', debit: 0, credit: inv.payable }],
-    invoiceId: inv.id, createdAt: at,
+    id: uid(), no: nextNo(d, 'JE', at), date: data.date, type: 'Pembayaran',
+    ref: `${v.no} / ${invs.map(i => i.no).join(', ')}`,
+    description: `Pembayaran ${v.payTo.name} (${v.method}${data.ref ? ' ' + data.ref : ''}) — ${invs.map(i => i.vendorInvoiceNo).join(', ')}`,
+    lines: voucherLines(d, v.invoiceIds, v.creditAccount), voucherId: v.id, createdAt: at,
   };
   d.journals.unshift(j);
-  inv.journalIds.push(j.id);
-  inv.status = 'Paid';
-  inv.paidDate = data.date;
-  if (po) po.history.push(ev(d, 'PAID', { ...c, at, note: j.no }));
+  v.status = 'Paid';
+  v.payment = { date: data.date, ref: data.ref, by };
+  v.journalId = j.id;
+  v.history.push(vev(d, 'PAID', { at, by, note: `${data.ref ? data.ref + ' — ' : ''}${j.no}` }));
+  for (const inv of invs) {
+    inv.status = 'Paid';
+    inv.paidDate = data.date;
+    inv.journalIds.push(j.id);
+    const po = d.pos.find(p => p.id === inv.poId);
+    if (po) po.history.push(ev(d, 'PAID', { at, by, note: `${v.no} — ${j.no}` }));
+  }
+  return j.id;
 }
 
 /* ---------- Vendor ---------- */

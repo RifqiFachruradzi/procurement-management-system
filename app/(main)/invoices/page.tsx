@@ -10,7 +10,7 @@ import { useDB } from '@/lib/store';
 
 export default function InvoicesPage() {
   const router = useRouter();
-  const { invoices, pos, vendors } = useDB();
+  const { invoices, pos, vendors, vouchers } = useDB();
   const ls = useListState();
   const vName = (id: string) => vendors.find(v => v.id === id)?.name ?? '-';
   const poNo = (id: string) => pos.find(p => p.id === id)?.no ?? '-';
@@ -55,7 +55,7 @@ export default function InvoicesPage() {
                     <td>{fdate(i.dueDate)}{overdue && <span className="sub !text-bad">Lewat jatuh tempo</span>}</td>
                     <td>{poNo(i.poId)}</td><td>{vName(i.vendorId)}</td>
                     <td className="num">{rp(i.total)}</td><td className="num">{rp(i.payable)}</td>
-                    <td>{i.status === 'Paid' ? <Badge tone="success">Lunas</Badge> : <Badge tone="info">Dijurnal</Badge>}</td>
+                    <td>{i.status === 'Paid' ? <Badge tone="success">Lunas</Badge> : i.voucherId ? <Badge tone="warning">{vouchers.find(v => v.id === i.voucherId)?.no ?? 'Voucher'}</Badge> : <Badge tone="info">Dijurnal</Badge>}</td>
                   </tr>
                 );
               })}

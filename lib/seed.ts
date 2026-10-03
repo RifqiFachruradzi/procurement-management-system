@@ -12,8 +12,12 @@ export function emptyDB(): DB {
       userName: 'Rifqi Fachruradzi',
       approverName: 'Budi Santoso (Head of Procurement)',
       shipTo: 'Gudang Utama, Jl. Industri Raya No. 5, Bekasi',
+      financeName: 'Maya Sari (Staff Finance)',
+      checkerName: 'Teguh Prasetyo (Accounting)',
+      financeApprover: 'Ratna Dewi (Finance Manager)',
+      cashierName: 'Joko Susilo (Kasir)',
     },
-    counters: {}, vendors: [], prs: [], pos: [], invoices: [], journals: [],
+    counters: {}, vendors: [], prs: [], pos: [], invoices: [], journals: [], vouchers: [],
   };
 }
 
@@ -57,7 +61,10 @@ export function seedDB(): DB {
   ops.receivePO(db, po, { date: day(30), receiver: 'Agus (Gudang)', note: 'Lengkap, kondisi baik' }, { at: t(30) });
   const tot = poTotals(db.pos.find(p => p.id === po)!);
   const inv = ops.postInvoice(db, { poId: po, vendorInvoiceNo: 'SJA/INV/2026/0912', taxInvoiceNo: '010.000-26.12345678', date: day(29), dueDate: addDays(day(29), 30), dpp: tot.dpp, tax: tot.tax, pphRate: 0, debitAccount: '5-1200' }, { at: t(29) });
-  ops.payInvoice(db, inv, { date: day(5), ref: 'Transfer BCA' }, { at: t(5) });
+  const jv = ops.createVoucher(db, { date: day(7), vendorId: V[0].id, invoiceIds: [inv], method: 'Transfer', creditAccount: '1-1110', description: 'Pembayaran ATK kuartal IV' }, { at: t(7) });
+  ops.checkVoucher(db, jv, { at: t(6) });
+  ops.approveVoucher(db, jv, { at: t(6, 15) });
+  ops.payVoucher(db, jv, { date: day(5), ref: 'TRF-BCA-0012345' }, { at: t(5) });
 
   // 2) Shipped, not yet invoiced
   pr = ops.createPR(db, { requester: 'Fajar Nugroho', department: 'Maintenance', neededDate: day(-3), purpose: 'Penggantian bearing & v-belt mesin produksi line 2', priority: 'Tinggi', items: [
@@ -70,6 +77,10 @@ export function seedDB(): DB {
   ops.sendPO(db, po, { at: t(9, 13) });
   ops.vendorAccept(db, po, { at: t(8), by: 'Sri Lestari (CV Teknik Mandiri)' });
   ops.shipPO(db, po, { courier: 'JNE Trucking', ref: 'JTR-55128890', date: day(2) }, { at: t(2) });
+  const tot2 = poTotals(db.pos.find(p => p.id === po)!);
+  const inv2 = ops.postInvoice(db, { poId: po, vendorInvoiceNo: 'TM/INV/10/0458', taxInvoiceNo: '010.000-26.22334455', date: day(2), dueDate: addDays(day(2), 14), dpp: tot2.dpp, tax: tot2.tax, pphRate: 0, debitAccount: '1-1400' }, { at: t(2, 11) });
+  const jv2 = ops.createVoucher(db, { date: day(1), vendorId: V[1].id, invoiceIds: [inv2], method: 'Transfer', creditAccount: '1-1120', description: 'Pembayaran bearing & v-belt line 2 (termin 14 hari)' }, { at: t(1) });
+  ops.checkVoucher(db, jv2, { at: t(0, 8) });
 
   // 3) Sent to vendor, waiting for vendor approval
   pr = ops.createPR(db, { requester: 'Yoga Pratama', department: 'IT', neededDate: day(-14), purpose: 'Laptop untuk karyawan baru divisi Finance', items: [

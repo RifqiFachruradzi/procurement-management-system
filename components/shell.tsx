@@ -1,6 +1,6 @@
 'use client';
 import {
-  BookText, Building2, ChevronRight, ClipboardList, FileText, LayoutGrid, Menu, Moon, Plus, ReceiptText, Route, SlidersHorizontal, Sun,
+  BookText, Building2, ChevronRight, ClipboardList, FileCheck2, FileText, LayoutGrid, Menu, Moon, Plus, ReceiptText, Route, SlidersHorizontal, Sun,
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -25,14 +25,15 @@ const NAV: { group: string; items: NavItem[] }[] = [
   ] },
   { group: 'Keuangan', items: [
     { href: '/invoices', label: 'Tagihan Vendor', icon: ReceiptText },
-    { href: '/journals', label: 'Jurnal', icon: BookText },
+    { href: '/vouchers', label: 'Jurnal Voucher', icon: FileCheck2 },
+    { href: '/journals', label: 'Jurnal Entry', icon: BookText },
   ] },
   { group: 'Sistem', items: [{ href: '/settings', label: 'Pengaturan', icon: SlidersHorizontal }] },
 ];
 
 const LABELS: Record<string, string> = {
   pr: 'Purchase Request', po: 'Purchase Order', vendors: 'Database Vendor', invoices: 'Tagihan Vendor',
-  journals: 'Jurnal', settings: 'Pengaturan', tracking: 'Tracking PR', new: 'Baru', edit: 'Edit',
+  journals: 'Jurnal Entry', vouchers: 'Jurnal Voucher', settings: 'Pengaturan', tracking: 'Tracking PR', new: 'Baru', edit: 'Edit',
 };
 
 function useTheme() {
@@ -52,7 +53,8 @@ function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }
   const settings = useDB(s => s.settings);
   const pendingPR = useDB(s => s.prs.filter(p => p.status === 'Open' && p.stage === 'SUBMITTED').length);
   const pendingPO = useDB(s => s.pos.filter(p => p.stage === 'PENDING').length);
-  const counts: Record<string, number> = { '/pr': pendingPR, '/po': pendingPO };
+  const pendingJV = useDB(s => s.vouchers.filter(v => v.status === 'Draft' || v.status === 'Checked' || v.status === 'Approved').length);
+  const counts: Record<string, number> = { '/pr': pendingPR, '/po': pendingPO, '/vouchers': pendingJV };
   const active = (href: string) => (href === '/' ? path === '/' : path === href || path.startsWith(href + '/'));
 
   return (
@@ -101,10 +103,13 @@ function Crumbs() {
   const po = useDB(s => s.pos);
   const inv = useDB(s => s.invoices);
   const vendors = useDB(s => s.vendors);
+  const journals = useDB(s => s.journals);
+  const vouchers = useDB(s => s.vouchers);
   const name = (seg: string, i: number) => {
     if (LABELS[seg]) return LABELS[seg];
     const parent = parts[i - 1];
-    const list = parent === 'pr' || parent === 'tracking' ? pr : parent === 'po' ? po : parent === 'invoices' ? inv : null;
+    const list = parent === 'pr' || parent === 'tracking' ? pr : parent === 'po' ? po : parent === 'invoices' ? inv
+      : parent === 'journals' ? journals : parent === 'vouchers' ? vouchers : null;
     if (list) return list.find(x => x.id === seg)?.no ?? seg;
     if (parent === 'vendors') return vendors.find(v => v.id === seg)?.name ?? seg;
     return seg;

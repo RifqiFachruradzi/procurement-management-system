@@ -19,6 +19,27 @@ export const fdate = (d?: string | null) =>
   d ? parse(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 export const fdt = (d?: string | null) =>
   d ? parse(d).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+const ONES = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas'];
+function words(n: number): string {
+  n = Math.floor(n);
+  const join = (a: string, rest: number) => (rest ? `${a} ${words(rest)}` : a);
+  if (n < 12) return ONES[n];
+  if (n < 20) return `${words(n - 10)} belas`;
+  if (n < 100) return join(`${words(n / 10)} puluh`, n % 10);
+  if (n < 200) return join('seratus', n - 100);
+  if (n < 1000) return join(`${words(n / 100)} ratus`, n % 100);
+  if (n < 2000) return join('seribu', n - 1000);
+  if (n < 1e6) return join(`${words(n / 1000)} ribu`, n % 1000);
+  if (n < 1e9) return join(`${words(n / 1e6)} juta`, n % 1e6);
+  if (n < 1e12) return join(`${words(n / 1e9)} miliar`, n % 1e9);
+  return join(`${words(n / 1e12)} triliun`, n % 1e12);
+}
+/** Amount in Indonesian words, e.g. 1250000 -> "Satu juta dua ratus lima puluh ribu rupiah". */
+export const terbilang = (n: number) => {
+  const w = Math.round(n) === 0 ? 'nol' : words(Math.round(n));
+  return w.charAt(0).toUpperCase() + w.slice(1) + ' rupiah';
+};
+
 export const initials = (s: string) =>
   String(s || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 

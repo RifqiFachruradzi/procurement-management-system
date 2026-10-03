@@ -42,17 +42,38 @@ export interface Invoice {
   id: string; no: string; vendorInvoiceNo: string; taxInvoiceNo: string; date: string; dueDate: string;
   poId: string; vendorId: string; dpp: number; tax: number; pph: number; pphRate: number; total: number; payable: number;
   debitAccount: string; notes: string; status: 'Posted' | 'Paid'; paidDate?: string; journalIds: string[]; createdAt: string;
+  /** Payment voucher that settles this invoice (null while not yet proposed for payment). */
+  voucherId?: string | null;
 }
 
 export interface JournalLine { account: string; debit: number; credit: number }
 export interface Journal {
   id: string; no: string; date: string; type: 'Pembelian' | 'Pembayaran'; ref: string; description: string;
-  lines: JournalLine[]; invoiceId: string; createdAt: string;
+  lines: JournalLine[]; invoiceId?: string; voucherId?: string; createdAt: string;
 }
 
-export interface Settings { company: string; address: string; npwp: string; userName: string; approverName: string; shipTo: string }
+export type VoucherStatus = 'Draft' | 'Checked' | 'Approved' | 'Paid' | 'Cancelled';
+export type PayMethod = 'Transfer' | 'Cek/Giro' | 'Tunai';
+export type VoucherEventKey = 'CREATED' | 'CHECKED' | 'APPROVED' | 'RETURNED' | 'PAID' | 'CANCELLED';
+export interface VoucherEvent { key: VoucherEventKey; at: string; by: string; note: string }
+
+/** Journal Voucher: the payment document that authorises the cashier to pay a vendor (bank/cash out). */
+export interface Voucher {
+  id: string; no: string; date: string; vendorId: string; invoiceIds: string[]; amount: number;
+  method: PayMethod; creditAccount: string; description: string;
+  payTo: { name: string; bank: string; account: string };
+  status: VoucherStatus; preparedBy: string;
+  checked?: Approval; approved?: Approval;
+  payment?: { date: string; ref: string; by: string };
+  journalId?: string; createdAt: string; history: VoucherEvent[];
+}
+
+export interface Settings {
+  company: string; address: string; npwp: string; userName: string; approverName: string; shipTo: string;
+  financeName: string; checkerName: string; financeApprover: string; cashierName: string;
+}
 
 export interface DB {
   settings: Settings; counters: Record<string, number>;
-  vendors: Vendor[]; prs: PR[]; pos: PO[]; invoices: Invoice[]; journals: Journal[];
+  vendors: Vendor[]; prs: PR[]; pos: PO[]; invoices: Invoice[]; journals: Journal[]; vouchers: Voucher[];
 }

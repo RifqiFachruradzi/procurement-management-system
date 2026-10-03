@@ -1,5 +1,5 @@
 'use client';
-import { ClipboardList, FileText, Plus, ReceiptText, RotateCcw, Send, Truck, Wallet } from 'lucide-react';
+import { Banknote, ClipboardList, FileCheck2, FileText, Plus, ReceiptText, RotateCcw, Send, Truck, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ProgressStrip, useTrack } from '@/components/tracking';
@@ -11,7 +11,7 @@ import { useDB } from '@/lib/store';
 import type { PR } from '@/lib/types';
 
 export default function Dashboard() {
-  const { prs, pos, invoices, settings } = useDB();
+  const { prs, pos, invoices, vouchers, settings } = useDB();
   const openPO = pos.filter(p => p.status === 'Open');
   const unpaid = invoices.filter(i => i.status !== 'Paid');
 
@@ -28,6 +28,9 @@ export default function Dashboard() {
     { l: 'PO menunggu persetujuan vendor', n: pos.filter(p => p.stage === 'SENT').length, i: Send, h: '/po?stage=SENT' },
     { l: 'PO ditolak, perlu revisi', n: pos.filter(p => p.stage === 'REJECTED' || p.stage === 'VENDOR_REJECTED').length, i: RotateCcw, h: '/po?stage=REJECTED' },
     { l: 'Barang dalam pengiriman', n: pos.filter(p => p.stage === 'SHIPPED').length, i: Truck, h: '/po?stage=SHIPPED' },
+    { l: 'Tagihan belum dibuatkan Jurnal Voucher', n: invoices.filter(i => i.status === 'Posted' && !i.voucherId).length, i: FileCheck2, h: '/vouchers/new' },
+    { l: 'Jurnal Voucher menunggu pemeriksaan/approval', n: vouchers.filter(v => v.status === 'Draft' || v.status === 'Checked').length, i: FileCheck2, h: '/vouchers?status=Checked' },
+    { l: 'Jurnal Voucher siap dibayar kasir', n: vouchers.filter(v => v.status === 'Approved').length, i: Banknote, h: '/vouchers?status=Approved' },
     { l: 'PO belum ditagihkan vendor', n: pos.filter(p => p.status === 'Open' && !p.invoiceId && PO_INVOICEABLE.includes(p.stage)).length, i: ReceiptText, h: '/invoices/new' },
   ];
   const stageCounts = PO_FLOW.map(k => ({ k, n: pos.filter(p => p.stage === k).length }));

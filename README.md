@@ -7,7 +7,8 @@ Procurement web app built with **Next.js 16 (App Router) + React 19 + TypeScript
 ```
 PR dibuat ─► PR disetujui atasan ─► PO dibuat ─► PO disetujui atasan ─► PO dikirim ke vendor
    ─► Vendor menyetujui (portal vendor) ─► Barang dikirim ─► Barang diterima (GR)
-   ─► Tagihan vendor diinput (panggil No PO) ─► Jurnal otomatis ─► PO & PR Closed
+   ─► Tagihan vendor diinput (panggil No PO) ─► Jurnal Entry pembelian ─► PO & PR Closed
+   ─► Jurnal Voucher (Dibuat ► Diperiksa ► Disetujui) ─► Dibayar kasir (bank/kas keluar) ─► Jurnal Entry pembayaran
 ```
 
 | Halaman | Fungsi |
@@ -19,7 +20,8 @@ PR dibuat ─► PR disetujui atasan ─► PO dibuat ─► PO disetujui atasan
 | `/tracking` | Timeline 10 tahap posisi PR sampai barang datang & tagihan dijurnal |
 | `/vendors` | Database vendor (kontak, NPWP, termin, rekening, rating, status) |
 | `/invoices` | Input tagihan dengan memanggil No PO yang sudah disepakati, cek selisih (3-way match), PPh 23, preview & posting jurnal, pembayaran |
-| `/journals` | Jurnal pembelian & pembayaran, export CSV |
+| `/vouchers` | **Jurnal Voucher**: dokumen dasar pembayaran / bank keluar. Pilih tagihan per vendor → diperiksa Accounting → disetujui Finance Manager → dibayar Kasir (no. transfer/cek). Cetak voucher dengan terbilang & 4 tanda tangan |
+| `/journals` | **List Jurnal Entry** (ringkas / detail akun) dan halaman detail per jurnal, export CSV |
 | `/settings` | Profil perusahaan, user & approver, bagan akun, backup/restore JSON, reset data demo |
 
 PO dan PR otomatis **Closed** saat barang diterima **dan** tagihan sudah dijurnal.

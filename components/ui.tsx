@@ -101,13 +101,13 @@ export function Alert({ tone, children, className }: { tone: 'info' | 'warning' 
 
 export function Tabs<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
   return (
-    <div className="inline-flex gap-0.5 rounded-lg bg-surface-2 p-[3px]">
+    <div className="inline-flex max-w-full gap-0.5 overflow-x-auto rounded-lg bg-surface-2 p-[3px]">
       {options.map(([k, l]) => (
         <button
           key={k}
           type="button"
           onClick={() => onChange(k)}
-          className={cx('rounded-md px-3 py-[5px] text-sm', value === k ? 'bg-surface font-bold text-fg shadow-sm' : 'text-muted hover:text-fg')}
+          className={cx('shrink-0 rounded-md px-3 py-[5px] text-sm whitespace-nowrap', value === k ? 'bg-surface font-bold text-fg shadow-sm' : 'text-muted hover:text-fg')}
         >
           {l}
         </button>

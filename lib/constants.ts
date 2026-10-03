@@ -1,7 +1,9 @@
-import type { EventKey, POStage, PRStage, Tone } from './types';
+import type { EventKey, PayMethod, POStage, PRStage, Tone, VoucherEventKey, VoucherStatus } from './types';
 
 export const ACCOUNTS: Record<string, string> = {
-  '1-1100': 'Kas & Bank',
+  '1-1100': 'Kas Kecil',
+  '1-1110': 'Bank BCA',
+  '1-1120': 'Bank Mandiri',
   '1-1400': 'Persediaan Barang',
   '1-1500': 'PPN Masukan',
   '1-2100': 'Aset Tetap - Peralatan',
@@ -12,6 +14,21 @@ export const ACCOUNTS: Record<string, string> = {
   '5-1300': 'Beban Jasa & Pemeliharaan',
 };
 export const DEBIT_ACCOUNTS = ['1-1400', '1-2100', '5-1100', '5-1200', '5-1300'];
+export const CASH_ACCOUNTS = ['1-1110', '1-1120', '1-1100'];
+export const PAY_METHODS: PayMethod[] = ['Transfer', 'Cek/Giro', 'Tunai'];
+
+export const VOUCHER_STATUS: Record<VoucherStatus, { label: string; tone: Tone; hint: string }> = {
+  Draft: { label: 'Draft — menunggu pemeriksaan', tone: 'warning', hint: 'Langkah berikutnya: diperiksa oleh Accounting.' },
+  Checked: { label: 'Diperiksa — menunggu approval', tone: 'info', hint: 'Langkah berikutnya: disetujui oleh Finance Manager.' },
+  Approved: { label: 'Disetujui — siap dibayar', tone: 'success', hint: 'Siap dibayar: kasir/finance melakukan pembayaran (bank keluar).' },
+  Paid: { label: 'Dibayar', tone: 'neutral', hint: 'Pembayaran selesai dan jurnal pembayaran telah diposting.' },
+  Cancelled: { label: 'Dibatalkan', tone: 'danger', hint: 'Voucher dibatalkan; tagihan kembali dapat dibuatkan voucher.' },
+};
+export const VOUCHER_FLOW: VoucherStatus[] = ['Draft', 'Checked', 'Approved', 'Paid'];
+export const VOUCHER_EVENT_LABELS: Record<VoucherEventKey, string> = {
+  CREATED: 'Voucher dibuat', CHECKED: 'Diperiksa', APPROVED: 'Disetujui', RETURNED: 'Dikembalikan untuk revisi',
+  PAID: 'Dibayar (bank/kas keluar)', CANCELLED: 'Dibatalkan',
+};
 export const accName = (code: string) => `${code} ${ACCOUNTS[code] ?? ''}`;
 
 export const PR_STAGES: Record<PRStage, { label: string; tone: Tone }> = {

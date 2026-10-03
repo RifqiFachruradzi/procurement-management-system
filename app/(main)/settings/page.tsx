@@ -12,6 +12,8 @@ import type { DB, Settings } from '@/lib/types';
 const FIELDS: [keyof Settings, string, boolean?][] = [
   ['company', 'Nama Perusahaan'], ['npwp', 'NPWP'], ['address', 'Alamat', true], ['shipTo', 'Alamat Pengiriman Default', true],
   ['userName', 'Nama Pengguna (Staff Procurement)'], ['approverName', 'Nama Atasan / Approver'],
+  ['financeName', 'Pembuat Jurnal Voucher (Finance)'], ['checkerName', 'Pemeriksa Voucher (Accounting)'],
+  ['financeApprover', 'Penyetuju Voucher (Finance Manager)'], ['cashierName', 'Kasir'],
 ];
 
 export default function SettingsPage() {
@@ -25,8 +27,8 @@ export default function SettingsPage() {
     toast('Pengaturan disimpan');
   };
   const backup = () => {
-    const { settings: s, counters, vendors, prs, pos, invoices, journals } = getDB();
-    downloadBlob(`procura-backup-${todayISO()}.json`, new Blob([JSON.stringify({ settings: s, counters, vendors, prs, pos, invoices, journals }, null, 2)], { type: 'application/json' }));
+    const { settings: s, counters, vendors, prs, pos, invoices, journals, vouchers } = getDB();
+    downloadBlob(`procura-backup-${todayISO()}.json`, new Blob([JSON.stringify({ settings: s, counters, vendors, prs, pos, invoices, journals, vouchers }, null, 2)], { type: 'application/json' }));
   };
   const restore = async (file?: File) => {
     if (!file) return;
@@ -34,7 +36,7 @@ export default function SettingsPage() {
       const d = JSON.parse(await file.text()) as DB;
       if (!Array.isArray(d.vendors) || !Array.isArray(d.prs) || !Array.isArray(d.pos)) throw new Error('invalid');
       replace(d);
-      setF(d.settings);
+      setF(useDB.getState().settings);
       toast('Data berhasil dipulihkan');
     } catch { toast('File backup tidak valid', true); }
   };
