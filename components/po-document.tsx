@@ -1,5 +1,5 @@
 'use client';
-import { poTotals } from '@/lib/calc';
+import { pct, poTotals } from '@/lib/calc';
 import { fdate, num, rp } from '@/lib/format';
 import { useDB } from '@/lib/store';
 import type { Approval, PO } from '@/lib/types';
@@ -71,9 +71,9 @@ export function PODocument({ po }: { po: PO }) {
 
       <div className="mt-3 ml-auto w-full max-w-[340px] text-sm">
         <Row l="Subtotal" r={rp(t.subtotal)} />
-        {t.discount > 0 && <Row l="Diskon" r={`- ${rp(t.discount)}`} />}
+        {t.discount > 0 && <Row l={`Diskon ${pct(t.discountRate)}%`} r={`- ${rp(t.discount)}`} />}
         <Row l="DPP" r={rp(t.dpp)} />
-        <Row l={`PPN ${po.taxRate}%`} r={rp(t.tax)} />
+        <Row l={`PPN ${pct(po.taxRate)}%`} r={rp(t.tax)} />
         <div className="mt-1.5 flex justify-between border-t border-neutral-900 pt-2.5 text-lg font-bold"><span>Total</span><span>{rp(t.total)}</span></div>
       </div>
 

@@ -85,7 +85,7 @@ export function reopenPR(d: DB, id: string, c: Ctx = {}) {
 
 /* ---------- Purchase Order ---------- */
 export interface POInput {
-  prId: string; vendorId: string; date?: string; items: POItem[]; discount: number; taxRate: number;
+  prId: string; vendorId: string; date?: string; items: POItem[]; discount: number; discountRate?: number | null; taxRate: number;
   deliveryDate: string; paymentTerms: number; shipTo: string; notes?: string;
 }
 
@@ -95,7 +95,7 @@ export function createPO(d: DB, data: POInput, c: Ctx = {}) {
   const po: PO = {
     id: uid(), no: nextNo(d, 'PO', at), date: data.date || at.slice(0, 10),
     prId: data.prId, vendorId: data.vendorId, items: data.items,
-    discount: Number(data.discount) || 0, taxRate: Number(data.taxRate) || 0,
+    discount: Number(data.discount) || 0, discountRate: data.discountRate ?? null, taxRate: Number(data.taxRate) || 0,
     deliveryDate: data.deliveryDate, paymentTerms: Number(data.paymentTerms) || 0,
     shipTo: data.shipTo, notes: data.notes || '',
     status: 'Open', stage: 'PENDING', invoiceId: null, received: false,

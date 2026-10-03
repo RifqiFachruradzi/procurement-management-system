@@ -36,7 +36,8 @@ export interface Receipt { date: string; receiver: string; note: string }
 
 export interface PO {
   id: string; no: string; date: string; prId: string; vendorId: string; items: POItem[];
-  discount: number; taxRate: number; deliveryDate: string; paymentTerms: number; shipTo: string; notes: string;
+  /** Discount amount (Rp); when discountRate is set the amount follows it as a % of the subtotal. */
+  discount: number; discountRate?: number | null; taxRate: number; deliveryDate: string; paymentTerms: number; shipTo: string; notes: string;
   status: Status; stage: POStage; invoiceId: string | null; received: boolean;
   approvals: { internal?: Approval; vendor?: Approval };
   shipment: Shipment | null; receipt: Receipt | null; history: HistoryEvent[];

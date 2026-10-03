@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { toast } from '@/components/feedback';
 import { blankItem, ItemsEditor, validItems, type EditorItem } from '@/components/items-editor';
 import { Alert, Empty, Field, FormGrid, PageHead } from '@/components/ui';
-import { poTotals } from '@/lib/calc';
+import { pct, poTotals } from '@/lib/calc';
 import { addDays, rp, todayISO } from '@/lib/format';
 import * as ops from '@/lib/ops';
 import { useDB } from '@/lib/store';
@@ -30,12 +30,13 @@ export function POForm({ po, initialPrId }: { po?: PO; initialPrId?: string }) {
     shipTo: po?.shipTo ?? settings.shipTo,
     notes: po?.notes ?? '',
     discount: po?.discount ?? 0,
+    discountRate: (po ? po.discountRate ?? null : null) as number | null,
     taxRate: po?.taxRate ?? 11,
   });
   const [items, setItems] = useState<EditorItem[]>(po ? po.items.map(i => ({ ...i })) : fromPR(pr));
   const [tried, setTried] = useState(false);
   const back = po ? `/po/${po.id}` : '/po';
-  const t = poTotals({ items: items.map(i => ({ ...i })), discount: f.discount, taxRate: f.taxRate });
+  const t = poTotals({ items, discount: f.discount, discountRate: f.discountRate, taxRate: f.taxRate });
   const bad = (ok: unknown) => (tried && !ok ? 'invalid' : '');
 
   if (!po && !eligible.length) {
@@ -68,7 +69,9 @@ export function POForm({ po, initialPrId }: { po?: PO; initialPrId?: string }) {
     if (!prId || !f.vendorId || !f.deliveryDate || !f.shipTo.trim()) return toast('Lengkapi field yang wajib diisi', true);
     if (!validItems(items)) return toast('Setiap item wajib memiliki nama dan qty > 0', true);
     if (items.some(i => !(i.price > 0))) return toast('Harga satuan wajib diisi sesuai penawaran/kesepakatan vendor', true);
-    const data: ops.POInput = { prId, ...f, discount: Number(f.discount) || 0, taxRate: Number(f.taxRate) || 0, paymentTerms: Number(f.paymentTerms) || 0,
+    if (t.discountRate < 0 || t.discountRate > 100 || t.discount > t.subtotal) return toast('Diskon tidak boleh melebihi subtotal (0–100%)', true);
+    if (f.taxRate < 0 || f.taxRate > 100) return toast('Tarif PPN harus antara 0–100%', true);
+    const data: ops.POInput = { prId, ...f, discount: t.discount, discountRate: f.discountRate, taxRate: Number(f.taxRate) || 0, paymentTerms: Number(f.paymentTerms) || 0,
       items: items.map(i => ({ name: i.name.trim(), qty: i.qty, unit: i.unit.trim() || 'pcs', price: i.price })) };
     const id = run(d => (po ? ops.updatePO(d, po.id, data) : ops.createPO(d, data)));
     toast(po ? 'PO disimpan & diajukan untuk approval' : `${useDB.getState().pos.find(p => p.id === id)?.no} dibuat, menunggu approval atasan`);
@@ -113,12 +116,28 @@ export function POForm({ po, initialPrId }: { po?: PO; initialPrId?: string }) {
         <div className="card-head border-t"><h3>Item PO</h3>{pr && <span className="text-sm text-muted">Item dari {pr.no} — isi harga satuan sesuai penawaran vendor</span>}</div>
         <div className="card-body">
           <ItemsEditor items={items} onChange={setItems} priceLabel="Harga Satuan" showErrors={tried} />
-          <div className="ml-auto w-full max-w-[340px] text-sm">
+          <div className="ml-auto w-full max-w-[400px] text-sm">
             <Row l="Subtotal"><b>{rp(t.subtotal)}</b></Row>
-            <Row l="Diskon (Rp)"><input className="input h-[30px] w-[130px] text-right" type="number" min={0} value={f.discount} onChange={e => setF({ ...f, discount: Number(e.target.value) })} /></Row>
+            <Row l="Diskon">
+              <div className="flex items-center gap-1.5">
+                <Suffix s="%"><input className="input h-[30px] w-[78px] pr-6 text-right" type="number" min={0} max={100} step="any" aria-label="Diskon (%)"
+                  value={f.discountRate ?? (t.subtotal ? +t.discountRate.toFixed(2) : 0)} onChange={e => setF({ ...f, discountRate: Number(e.target.value) })} /></Suffix>
+                <Suffix s="Rp" left><input className="input h-[30px] w-[120px] pl-8 text-right" type="number" min={0} aria-label="Diskon (Rp)"
+                  value={t.discount} onChange={e => setF({ ...f, discount: Number(e.target.value), discountRate: null })} /></Suffix>
+              </div>
+            </Row>
             <Row l="DPP"><b>{rp(t.dpp)}</b></Row>
-            <Row l="PPN (%)"><input className="input h-[30px] w-[130px] text-right" type="number" min={0} step="any" value={f.taxRate} onChange={e => setF({ ...f, taxRate: Number(e.target.value) })} /></Row>
-            <Row l="Nilai PPN"><b>{rp(t.tax)}</b></Row>
+            <Row l="Tarif PPN">
+              <div className="flex items-center gap-1.5">
+                {[0, 11, 12].map(r => (
+                  <button key={r} type="button" onClick={() => setF({ ...f, taxRate: r })}
+                    className={`h-[30px] rounded-md border px-2 text-xs ${f.taxRate === r ? 'border-accent bg-accent text-accent-fg' : 'border-line text-muted hover:text-fg'}`}>{r}%</button>
+                ))}
+                <Suffix s="%"><input className="input h-[30px] w-[78px] pr-6 text-right" type="number" min={0} max={100} step="any" aria-label="Tarif PPN (%)"
+                  value={f.taxRate} onChange={e => setF({ ...f, taxRate: Number(e.target.value) })} /></Suffix>
+              </div>
+            </Row>
+            <Row l={`Nilai PPN (${pct(f.taxRate)}%)`}><b>{rp(t.tax)}</b></Row>
             <div className="mt-1.5 flex justify-between border-t border-line pt-2.5 text-lg font-bold"><span>Total</span><span>{rp(t.total)}</span></div>
           </div>
         </div>
@@ -132,3 +151,11 @@ export function POForm({ po, initialPrId }: { po?: PO; initialPrId?: string }) {
 }
 
 const Row = ({ l, children }: { l: string; children: React.ReactNode }) => <div className="flex items-center justify-between gap-3 py-1"><span>{l}</span>{children}</div>;
+
+/** Input with a unit label (e.g. "%", "Rp") drawn inside the field. */
+const Suffix = ({ s, left, children }: { s: string; left?: boolean; children: React.ReactNode }) => (
+  <span className="relative inline-block">
+    {children}
+    <span className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-xs text-muted ${left ? 'left-2.5' : 'right-2'}`}>{s}</span>
+  </span>
+);
