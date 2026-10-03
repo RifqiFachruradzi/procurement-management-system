@@ -2,7 +2,7 @@
 
 Aplikasi web procurement dengan UI minimalis (font Arial Narrow, ikon SVG, tanpa emoji). Berjalan sepenuhnya di browser tanpa build step; data tersimpan di `localStorage`.
 
-**Live:** https://rifqifachruradzi.github.io/procurement-management-system/ (GitHub Pages, otomatis deploy setiap push ke `main`).
+**Deploy:** Vercel — otomatis deploy setiap push ke `main` setelah repo dihubungkan ke Vercel.
 
 ## Alur
 
@@ -38,4 +38,8 @@ python3 -m http.server 8000
 ## Catatan
 
 - Data disimpan per-browser (localStorage). Portal vendor bekerja pada browser yang sama; untuk persetujuan vendor lintas perangkat diperlukan backend (bisa ditambahkan kemudian).
-- Deploy: workflow `.github/workflows/pages.yml`. Jika Pages belum aktif, aktifkan di **Settings → Pages → Source: GitHub Actions**.
+## Deploy ke Vercel
+
+1. Buka https://vercel.com/new dan pilih **Import Git Repository** → `procurement-management-system`.
+2. Framework Preset: **Other**. Build Command dan Install Command dikosongkan; Output Directory `.` (sudah diatur di `vercel.json`).
+3. Klik **Deploy**. Setiap push ke `main` akan otomatis menjadi deployment production; branch lain mendapat preview URL.
